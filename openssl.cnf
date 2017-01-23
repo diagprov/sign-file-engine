@@ -1,0 +1,14 @@
+openssl_conf = openssl_init
+engines = engine_section
+
+[openssl_init]
+engines = engine_section
+
+[engine_section]
+pkcs11 = pkcs11_cardos
+
+[pkcs11_cardos]
+engine_id = pkcs11
+dynamic_path = /usr/lib64/openssl/engines/libpkcs11.so
+MODULE_PATH = /opt/cardos/lib/libcardos11.so 
+init = 1
