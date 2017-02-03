@@ -7,7 +7,6 @@
  * Authors: David Howells <dhowells@redhat.com>
  *          David Woodhouse <dwmw2@infradead.org>
  *          Juerg Haefliger <juerg.haefliger@hpe.com>
- *          Antony Vennard <antony@vennard.io>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -139,7 +138,6 @@ static EVP_PKEY *read_private_key(const char *private_key_name)
 	if (!strncmp(private_key_name, "pkcs11:", 7)) {
 		ENGINE *e;
 
-		ENGINE_load_builtin_engines();
 		drain_openssl_errors();
 		e = ENGINE_by_id("pkcs11");
 		ERR(!e, "Load PKCS#11 ENGINE");
@@ -229,10 +227,20 @@ int main(int argc, char **argv)
 	X509 *x509;
 	BIO *bd, *bm;
 	int opt, n;
+
 	OpenSSL_add_all_algorithms();
-	OPENSSL_config(NULL);
+    OPENSSL_load_builtin_modules();
+    ENGINE_load_builtin_engines();
 	ERR_load_crypto_strings();
 	ERR_clear_error();
+
+	if (CONF_modules_load_file(NULL, NULL,
+		CONF_MFLAGS_DEFAULT_SECTION | 
+        CONF_MFLAGS_IGNORE_MISSING_FILE) <= 0) {
+		fprintf(stderr, "FATAL: error loading configuration file.\n");
+		ERR_print_errors_fp(stderr);
+		exit(4);
+	}
 
 	key_pass = getenv("KBUILD_SIGN_PIN");
 
@@ -270,7 +278,7 @@ int main(int argc, char **argv)
 	}
 	x509_name = argv[2];
 	module_name = argv[3];
-	if (argc == 5) {
+	if (argc == 5 && strcmp(argv[3], argv[4]) != 0) {
 		dest_name = argv[4];
 		replace_orig = false;
 	} else {
